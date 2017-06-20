@@ -1,0 +1,110 @@
+#!/bin/bash
+
+usage () {
+    echo "Usage:"
+    echo "  $(basename $0) (shrink|expand) -a WIDTHxHEIGHT) -g GRAVITY) <input filename> <output filename>"
+}
+
+# finds the edge on which we're extending - used to get average color on that edge
+get_edge() {
+    shopt -s nocasematch
+    if [[ $1 =~ "north" ]]; then
+	edge_bounds="${image_width}x1+0+$(( image_height - 1 ))"
+    elif [[ $1 =~ "east" ]]; then
+	edge_bounds="1x${image_height}+0+0"
+    elif [[ $1 =~ "south" ]]; then
+	edge_bounds="${image_width}x1+0+0"		
+    elif [[ $1 =~ "west" ]]; then
+	edge_bounds="1x${image_height}+$(( image_width - 1 ))+0"
+    fi
+}
+
+get_background() {
+    edge_bounds=""
+    get_edge $gravity
+
+    bgcolor=$(convert $input_file -crop "${edge_bounds}" -define histogram:unique-colors=true -format %c histogram:info:-| sort -rn | head -1 | grep -ioE "#[0-9a-f]{6}")
+    background_arg="-background ${bgcolor}"
+}
+
+# A POSIX variable
+OPTIND=2         # Reset in case getopts has been used previously in the shell.
+
+# Initialize our own variables:
+command_type=$1
+aspect_width=0
+aspect_height=0
+input_file=""
+output_file=""
+
+while getopts "h?a:g:" opt; do
+    case "$opt" in
+    h|\?)
+        usage
+        exit 0
+        ;;
+    a)
+	aspect_arr=(${OPTARG//x/ })
+	aspect_width=${aspect_arr[0]}
+	aspect_height=${aspect_arr[1]}
+        ;;
+    g)  gravity=$OPTARG
+	gravity_arg="-gravity ${gravity}"
+        ;;
+    esac
+done
+
+input_file=${@:$OPTIND:1}
+output_file=${@:$OPTIND+1:1}
+
+# for debugarino
+if false; then
+    echo $command_type $aspect_width "x" $aspect_height $gravity $input_file $output_file
+fi
+
+# determine new image dimensions
+
+image_size=( $(identify -format "%w %h" $input_file) )
+image_width=${image_size[0]}
+image_height=${image_size[1]}
+
+# sad janky way of storing a boolean comparisong :-((((
+output_aspect_bigger=0; [ $(( aspect_width * image_height )) -gt $(( image_width * aspect_height )) ] && output_aspect_bigger=1
+
+output_width=$image_width
+output_height=$image_height
+
+background_arg=""
+
+if [ "$command_type" == "shrink" ]; then
+    if [ $output_aspect_bigger -eq 0 ]; then
+	output_width=$(( image_height * aspect_width / aspect_height ))
+    else
+	output_height=$(( image_width * aspect_height / aspect_width ))
+    fi
+elif [ "$command_type" == "expand" ]; then
+    get_background
+    
+    if [ $output_aspect_bigger -eq 0 ]; then
+	output_height=$(( image_width * aspect_height / aspect_width ))
+    else
+	output_width=$(( image_height * aspect_width / aspect_height ))
+    fi
+elif [ "$command_type" == "exact" ]; then
+     get_background
+     
+     output_width=$aspect_width
+     output_height=$aspect_height
+fi
+
+# make sure output isn't overwriting anything
+outfile_index=1
+outfile_test_name=$output_file
+while [ -f $outfile_test_name ]; do
+    outfile_test_name=${output_file%.*}"_$outfile_index."${output_file##*.}
+    ((outfile_index++))
+done
+output_file=$outfile_test_name
+
+convert $input_file $gravity_arg $background_arg -extent "${output_width}x${output_height}" $output_file
+
