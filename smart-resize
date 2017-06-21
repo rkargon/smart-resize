@@ -2,7 +2,7 @@
 
 usage () {
     echo "Usage:"
-    echo "  $(basename $0) (shrink|expand) -a WIDTHxHEIGHT) -g GRAVITY) <input filename> <output filename>"
+    echo "  $(basename $0) (shrink|expand|exact) -a WIDTHxHEIGHT -g GRAVITY <input filename> <output filename>"
 }
 
 # finds the edge on which we're extending - used to get average color on that edge
@@ -16,13 +16,15 @@ get_edge() {
 	edge_bounds="${image_width}x1+0+0"		
     elif [[ $1 =~ "west" ]]; then
 	edge_bounds="1x${image_height}+$(( image_width - 1 ))+0"
+    else
+	edge_bounds="${image_width}x${image_height}+0+0"
     fi
 }
 
 get_background() {
     edge_bounds=""
     get_edge $gravity
-
+    echo "Finding background color...."
     bgcolor=$(convert $input_file -crop "${edge_bounds}" -define histogram:unique-colors=true -format %c histogram:info:-| sort -rn | head -1 | grep -ioE "#[0-9a-f]{6}")
     background_arg="-background ${bgcolor}"
 }
@@ -56,6 +58,16 @@ done
 
 input_file=${@:$OPTIND:1}
 output_file=${@:$OPTIND+1:1}
+
+if [ -z "$aspect_arr" ] || [ -z "$input_file" ] || [ -z "$output_file" ]; then
+    usage
+    exit 0
+fi
+
+if [ ! -f "$input_file" ]; then
+    echo "Error: input file does not exist."
+    exit 1
+fi
 
 # for debugarino
 if false; then
@@ -95,6 +107,8 @@ elif [ "$command_type" == "exact" ]; then
      
      output_width=$aspect_width
      output_height=$aspect_height
+else
+    usage
 fi
 
 # make sure output isn't overwriting anything

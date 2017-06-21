@@ -6,8 +6,11 @@ A utility for resizing image to the largest possible size, given a certain aspec
 
 ## Usage
 
+ImageMagick must be installed for `smart-resize` to work. 
+Simply run the script as follows:
+
 ```
-smart-resize shrink|expand|exact -a <width>x<height> -g <gravity> <input_image> <output_image> 
+sh smart-resize shrink|expand|exact -a <width>x<height> -g <gravity> <input_image> <output_image> 
 ```
 
 ### Commands:
@@ -24,4 +27,4 @@ The `smart-resize` script has three command: `shrink`, `expand`, and `exact`. Th
 
 * The aspect ratio is specified using the `-a` flag. The argument is `WIDTH`x`HEIGHT`, where WIDTH and HEIGHT are integers. This represents the desired aspect ration of the resuling image, or the exact dimensions if the `exact` command is used. 
 
-* The direction in which to expand or shrink an image is specified by the `-g` (or "gravity") flag. The "gravity" specified the direction in which the original image is placed relative to the new image. For example, to only expand the image along the top, you'd want `-g south`. This is the same as IamgeMagick's `gravity` flag, and more documentation can be found here: 
+* The direction in which to expand or shrink an image is specified by the `-g` (or "gravity") flag. The "gravity" specified the direction in which the original image is placed relative to the new image. For example, to only expand the image along the top, you'd want `-g south`. This is the same as IamgeMagick's `gravity` flag, and more documentation can be found [here](https://www.imagemagick.org/script/command-line-options.php#gravity).
