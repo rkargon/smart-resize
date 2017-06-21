@@ -2,7 +2,9 @@
 
 A utility for resizing image to the largest possible size, given a certain aspect ratio. Images are either cropped to fit the aspect ratio, or can be increased a long a certain direction. If the image is expanded, the most common color along the image's edge is used to fill in the new backgroudn. 
 
-`smart-resize` uses ImageMagick under the hood. 
+## Installation
+
+`smart-resize` uses ImageMagick under the hood, and thus ImageMagick must be [installed](http://imagemagick.org/script/download.php) first. 
 
 ## Usage
 
